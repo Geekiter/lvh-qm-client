@@ -1,0 +1,33 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>左心室肥厚定量测量平台</title>
+    <link href="../static/bootstrap-5.2.2-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/css/style.css">
+</head>
+<body>
+<h1 class="container pt-5 mt-5 text-center">欢迎使用 左心室肥厚定量测量平台 😀</h1>
+<div class="text-center ">
+    <button class="mt-5 index_button btn btn-primary btn-lg disabled" href="./index.html">
+        模型初始化...
+    </button>
+</div>
+<script src="../static/bootstrap-5.2.2-dist/js/bootstrap.bundle.js"></script>
+<script>
+    <!--    -->
+    // 每3秒检测120.0.0.1:15000接口是否连通，连通则跳转到index.html
+    setInterval(function () {
+        fetch('http://127.0.0.1:15000')
+            .then(function (response) {
+                if (response.status === 200) {
+                    window.location.href = './index.html';
+                }
+            })
+    }, 3000);
+
+</script>
+</body>
+</html>
