@@ -8,7 +8,9 @@
     <link href="../../static/bootstrap-5.2.2-dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="index.css" rel="stylesheet" type="text/css">
     <link href="../../static/bootstrap-icon/dist.css" rel="stylesheet" type="text/css">
-    <title>皮肤病识别平台系统</title>
+    <link href="../../static/highcharts/dashboards.css" rel="stylesheet" type="text/css">
+
+    <title>左心室肥厚定量测量</title>
 </head>
 <body>
 <!--利用bootstrap左右布局，1:3，左边工具栏，右边图像预览-->
@@ -29,12 +31,6 @@
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="equal_switch">
                 <label class="form-check-label">均衡化</label>
-            </div>
-            <hr/>
-            <div class="form-check form-switch">
-
-                <input class="form-check-input" type="checkbox" role="switch" id="hair_switch">
-                <label class="form-check-label">毛发去除</label>
             </div>
             <hr/>
             <div>
@@ -93,12 +89,24 @@
 
             <hr/>
             <div class="mt-1">
+                <button class="btn btn-dark btn-sm  btn-block" onclick="video_filters()"><i class="bi bi-scissors"></i>
+                    修改视频
+                </button>
                 <button class="btn btn-secondary btn-sm  btn-block" onclick="value_init()"><i class="bi bi-recycle"></i>
                     参数重置
                 </button>
             </div>
-
             <hr/>
+            <div class="mt-2">
+                <h5>检测结果参考：</h5>
+                <p>室间隔厚度（舒张期）：8.42</p>
+                <p>室间隔厚度（收缩期）：4.85</p>
+                <p>左心室后壁厚度（舒张期）：7.07</p>
+                <p>左心室后壁厚度（收缩期）：4.81</p>
+                <p class="text-sm-start">有可能存在肥厚现象。左心室肥大. 左心室肥大即心脏主泵室（左心室）的室壁增厚。这种增厚可能导致心脏内压力升高，有时导致心脏泵血功能不佳。最常见的病因是高血压。</p>
+            </div>
+            <hr/>
+
         </div>
 
         <div class="col-9">
@@ -107,7 +115,7 @@
             <!--            <img id="preview_img"/>-->
             <div id="video-container">
                 <video id="video-player" controls>
-                    <source src="file:///C:\Users\alber\Videos\test_video\nokia_lumia_820_ad.mp4">
+                    <source src="file:///C:\Users\alber\Videos\test_video\137921510-1-6.mp4">
                 </video>
             </div>
             <!--            按键居中-->
@@ -118,35 +126,42 @@
                             <i class="bi bi-caret-left-fill"></i>
                             </i>上一帧
                         </button>
-                        <button id="play-pause" type="button" class="btn btn-secondary btn-lg "><i class="bi bi-pause-fill"></i>播放
+                        <button id="play-pause" type="button" class="btn btn-secondary btn-lg "><i
+                                class="bi bi-pause-fill"></i>播放
                         </button>
                         <button id="next-frame" type="button" class="btn btn-dark btn-lg b">
                             <i class="bi bi-caret-right-fill"></i>
                             </i>下一帧
                         </button>
+                        <button id="track" type="button" class="btn btn-secondary btn-lg b">
+                            <i class="bi bi-graph-down"></i>
+                            </i>检测
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div id="container" style="width:100%; height:400px;" class="highcharts-dark"></div>
+<!--                        <canvas id="myChart" ></canvas>-->
                     </div>
                     <p class="text-center" id="result">用于显示分类</p>
                     <div>
-                        <p>分类模型地址：</p>
+                        <p>视频地址</p>
+                        <p class="text-start small" id="source_path"></p>
+                        <p>模型地址：</p>
                         <p class="text-start small" id="model_path"></p>
-                        <p>标签地址：</p>
-                        <p class="text-start small" id="label_path"></p>
-                        <hr/>
-                        <p>分割模型地址：</p>
-                        <p class="text-start small" id="segment_model_path"></p>
                     </div>
                 </div>
-                <div class="p-4">
-                    <h5>疾病信息</h5>
-                    <div id="remark">用于显示有关疾病的科普内容</div>
-                </div>
+
             </div>
         </div>
     </div>
 </div>
 <script src="../../static/bootstrap-5.2.2-dist/js/bootstrap.bundle.js"></script>
+<script src="../../static/chart.js"></script>
 <script src="index.js"></script>
+<script>
 
+
+</script>
 
 </body>
 

@@ -1,29 +1,24 @@
 const {ipcRenderer} = require('electron')
-// 导入fs
-const fs = require('fs')
-
-//base64 to img
-function base64ToImg(base64) {
-    // 去掉base64头部
-    const base64Data = base64.replace(/^data:image\/\w+;base64,/, "")
-    // 生成图片路径
-    const dataBuffer = Buffer.from(base64Data, 'base64')
-    return dataBuffer
-}
-
-//img to base64
-function imgToBase64(img) {
-    let image
-    // 读取图片文件
-    try {
-        image = fs.readFileSync(img, 'base64')
-    } catch (e) {
-        console.log(e)
-    }
-    // 将图片转换为base64
-    const base64 = `data:image/png;base64,${image}`
-    return base64
-}
+const Highcharts = require('../../static/highcharts/highcharts.js');
+// let source_path = "C:\\Users\\alber\\dev\\py\\lvh-qm-server\\Image08.avi"
+// let current_path = source_path
+ipcRenderer.on("FILE_OPEN", (event, args) => {
+    const filePath = args[0]
+    video.src = filePath;
+    localStorage.setItem("source_path", filePath)
+    localStorage.setItem("current_path", filePath)
+    label_default()
+})
+let chart = null;
+const video = document.getElementById('video-player');
+const playPauseButton = document.getElementById('play-pause');
+const nextFrameButton = document.getElementById('next-frame');
+const prevFrameButton = document.getElementById('prev-frame');
+const trackButton = document.getElementById('track');
+playPauseButton.addEventListener('click', togglePlayPause);
+nextFrameButton.addEventListener('click', playNextFrame);
+prevFrameButton.addEventListener('click', playPrevFrame);
+trackButton.addEventListener('click', track_from_json);
 
 let id_arr = {}
 // 获取index.html工具栏元素id
@@ -34,7 +29,6 @@ id_arr['gamma1'] = document.getElementById('gamma1')
 id_arr['equal_switch'] = document.getElementById('equal_switch')
 id_arr['edge_switch'] = document.getElementById('edge_switch')
 id_arr['sharpen_level1'] = document.getElementById('sharpen_level1')
-id_arr['hair_switch'] = document.getElementById('hair_switch')
 
 id_arr['bri_a_l'] = document.getElementById('bri_a_l')
 id_arr['bri_b_l'] = document.getElementById('bri_b_l')
@@ -42,16 +36,6 @@ id_arr['smooth_l'] = document.getElementById('smooth_l')
 id_arr['gamma_l'] = document.getElementById('gamma_l')
 id_arr['sharpen_l'] = document.getElementById('sharpen_l')
 id_arr['contour_switch'] = document.getElementById('contour_switch')
-const preview_img = document.getElementById('preview_img')
-
-// 从localStorage中获取work的值，即图片路径
-const work = localStorage.getItem('work')
-// 如果work不为空，则将图片路径写入preview_img标签的background-image属性
-if (work) {
-    //work to base64
-    const base64 = imgToBase64(work)
-    preview_img.style.backgroundImage = `url(${base64})`
-}
 
 
 let default_value = {
@@ -62,7 +46,6 @@ let default_value = {
     equal_switch: false,
     edge_switch: false,
     sharpen_level1: 0,
-    hair_switch: false,
     contour_switch: false
 }
 let range_label = {
@@ -71,37 +54,20 @@ let range_label = {
     smooth_frame1: id_arr['smooth_l'],
     gamma1: id_arr['gamma_l'],
     sharpen_level1: id_arr['sharpen_l']
-
 }
-//数值初始化
-value_init()
 
-
-ipcRenderer.on('FILE_OPEN', (event, args) => {
-    // 文件路径
-    const filePath = args[0]
-    // 转换文件路径风格
-    const newFilePath = filePath.replace(/\\/g, '/')
-
-    //base64编码
-    const base64 = fs.readFileSync(newFilePath, {encoding: 'base64'})
-
-    // 将新的文件路径写入preview_img标签的background-image属性
-    preview_img.style.backgroundImage = `url(data:image/jpg;base64,${base64})`
-    // document.getElementById('preview_img').style.backgroundImage = `url(${newFilePath})`
-    // 将文件路径保存到localStorage中，key为work，value为文件路径
-    localStorage.setItem('work', newFilePath)
-
-    value_init()
-
-})
+//将range_label对象的range值赋给label
+function label_bind() {
+    for (let key in range_label) {
+        range_label[key].innerHTML = id_arr[key].value
+    }
+}
 
 //label default
 function label_default() {
     key_arr = {
-        model_path: "默认：Resnet18",
-        label_path: "默认：ImageNetV1 1000分类",
-        segment_model_path: "默认：DeepLabV3+",
+        model_path: "默认：Yolo V8",
+        source_path: "默认：Image08.avi",
     }
 
     for (let key in key_arr) {
@@ -113,155 +79,24 @@ function label_default() {
     }
 }
 
-ipcRenderer.on("open_model", (e, a) => {
-    let key = a[0]
-    let value = a[1][0]
-    localStorage.setItem(key, value)
-    label_default()
-})
-
 //数值初始化
 function value_init() {
     label_bind()
 //遍历id_arr，为每个元素添加change事件
     for (let key in id_arr) {
         // 初始化参数值
-        id_arr[key].value = default_value[key]
+        try {
+            id_arr[key].value = default_value[key]
+        } catch (e) {
+            console.log(e)
+            console.log(id_arr[key])
+        }
 
-        id_arr[key].addEventListener('input', img_process)
+        id_arr[key].addEventListener('input', label_bind)
     }
 //    模型路径初始化
     label_default()
-    img_process()
 }
-
-function img_process() {
-    label_bind()
-    // 图片文件转为base64
-    const img = localStorage.getItem('work')
-    let imgData
-    try {
-        imgData = fs.readFileSync(img, {encoding: 'base64'})
-    } catch (e) {
-        console.log(e)
-    }
-    fetch('http://127.0.0.1:15000/api/img_process', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                bri_a1: id_arr['bri_a1'].value,
-                bri_b1: id_arr['bri_b1'].value,
-                smooth_frame1: id_arr['smooth_frame1'].value,
-                gamma1: id_arr['gamma1'].value,
-                equal_switch: id_arr['equal_switch'].checked,
-                edge_switch: id_arr['edge_switch'].checked,
-                sharpen_level1: id_arr['sharpen_level1'].value,
-                hair_switch: id_arr['hair_switch'].checked,
-                contour_switch: id_arr['contour_switch'].checked,
-                imgData: localStorage.getItem('work')
-            }),
-
-        }
-    )
-        .then((res) => {
-            // 返回的是base64
-            return res.text()
-
-        })
-        .then((res) => {
-            // 将base64转为图片
-            const img = document.getElementById('preview_img')
-            img.style.backgroundImage = `url(data:image/jpg;base64,${res})`
-        })
-
-
-}
-
-function null2str(str) {
-    if (str === null)
-        return ""
-    else
-        return str
-}
-
-// 图片预测函数，post请求
-function predict() {
-//    从preview_img标签中获取图片路径
-    const img = preview_img.style.backgroundImage
-    const imgData = img.split(',')[1]
-    // 发送图片预测http post请求，参数为图片路径，返回json,pred为预测结果
-    fetch('http://127.0.0.1:15000/api/predict', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model_path: null2str(localStorage.getItem('model_path')),
-            label_path: null2str(localStorage.getItem('label_path')),
-            imgData: imgData
-        })
-    })
-        .then((res) => {
-            return res.json()
-        })
-        .then((res) => {
-                // 将预测结果写入result标签
-                document.getElementById('result').innerHTML = res.label
-                // 将remark写入remark标签
-                if (res.remark !== "") {
-                    document.getElementById('remark').innerHTML = res.remark
-                } else {
-                    //    嵌入bing搜索,UA为安卓手机，没有滚动条
-                    document.getElementById('remark').innerHTML = `<iframe src="https://cn.bing.com/search?q=${res.label}&ensearch=1&FORM=BEHPTB&ensearch=1&UA=android"  style="width: 100%;height: 100%"></iframe>`
-                }
-            }
-        )
-}
-
-function segmentation() {
-    //    从preview_img标签中获取图片路径
-    const img = preview_img.style.backgroundImage
-    const imgData = img.split(',')[1]
-    // 发送图片预测http post请求，参数为图片路径，返回json,pred为预测结果
-    fetch('http://127.0.0.1:15000/api/segment', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            segment_model_path: null2str(localStorage.getItem('segment_model_path')),
-            imgData: imgData
-        })
-    })
-        .then((res) => {
-            // 返回的是base64
-            return res.text()
-
-        })
-        .then((res) => {
-            // 将base64转为图片
-            const img = document.getElementById('preview_img')
-            img.style.backgroundImage = `url(data:image/jpg;base64,${res})`
-        })
-}
-
-//将range_label对象的range值赋给label
-function label_bind() {
-    for (let key in range_label) {
-        range_label[key].innerHTML = id_arr[key].value
-    }
-}
-
-const video = document.getElementById('video-player');
-const playPauseButton = document.getElementById('play-pause');
-const nextFrameButton = document.getElementById('next-frame');
-const prevFrameButton = document.getElementById('prev-frame');
-playPauseButton.addEventListener('click', togglePlayPause);
-nextFrameButton.addEventListener('click', playNextFrame);
-prevFrameButton.addEventListener('click', playPrevFrame);
-
 
 
 function togglePlayPause() {
@@ -283,3 +118,191 @@ function playPrevFrame() {
     video.pause();
     video.currentTime -= 1 / 30; // 适用于30帧每秒的视频，根据实际情况调整
 }
+
+function track_from_json() {
+    json_data_file_path = "./fake_data.json"
+    fetch(json_data_file_path, {
+        method: "GET",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    }).then(res => res.json())
+        .then(data => {
+            console.log(data)
+            for (let i = 0; i < data["down"].length; i++) {
+                data["down"][i] /= 10
+                data["up"][i] /= 10
+            }
+            update_highchart_data(data["down"], data["up"])
+        })
+
+}
+
+function track() {
+    fetch_url = "http://localhost:16000/api/track"
+    json_data = {
+        "file_path": "C:\\Users\\alber\\dev\\data\\lvh\\40320484肥厚\\Image08.avi"
+    }
+    // return data structure
+    /**
+     * {
+     *     "down": [1,2,3],
+     *     "up": [1,2,3],
+     *     "file_path": "C:\\Users\\alber\\dev\\data\\lvh\\40320484肥厚\\Image08.avi"
+     * }
+     */
+    fetch(fetch_url, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(json_data)
+    }).then(res => res.json())
+        .then(data => {
+            console.log(data)
+            init_chart_highchart(data["down"], data["up"])
+        })
+}
+
+const plugin = {
+    id: 'customCanvasBackgroundColor',
+    beforeDraw: (chart, args, options) => {
+        const {ctx} = chart;
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = options.color || '#99ffff';
+        ctx.fillRect(0, 0, chart.width, chart.height);
+        ctx.restore();
+    }
+};
+
+function init_chart(point_in, point_out) {
+    // point_in = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    // point_out = [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+    const labels = []
+    for (let i = 0; i < point_in.length; i++) {
+        labels.push(i.toString())
+    }
+
+    const ctx = document.getElementById('myChart');
+
+    new Chart(ctx,
+        {
+            type: 'line',
+            data: {
+                datasets: [{
+                    data: point_in,
+                    label: '内轮廓',
+                }, {
+                    data: point_out,
+                    label: '外轮廓',
+                }],
+                labels: labels
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    customCanvasBackgroundColor: {
+                        color: 'lightGreen',
+                    }
+                }
+            },
+            plugins: [plugin],
+        });
+}
+
+function init_chart_highchart(point_in, point_out) {
+
+    point_in = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,]
+    point_out = [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5,]
+    const labels = []
+    for (let i = 0; i < point_in.length; i++) {
+        labels.push(i.toString())
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        chart = Highcharts.chart('container', {
+
+            credits: {enabled: false}, // 禁用版权信息
+            chart: {
+                type: 'area',
+            },
+            title: {
+                text: '',
+            },
+            xAxis: {
+                categories: labels
+            },
+            yAxis: {
+                title: {
+                    text: 'Thickness'
+                }
+            },
+            series: [{
+                name: '上部厚度',
+                data: point_in
+            }, {
+                name: '下部厚度',
+                data: point_out
+            }],
+            plotOptions: {
+                area: {
+                    marker: {
+                        enabled: false,
+                        symbol: 'circle',
+                        radius: 2,
+                        states: {
+                            hover: {
+                                enabled: true
+                            }
+                        }
+                    }
+                }
+            },
+        });
+    });
+}
+
+function update_highchart_data(point_in, point_out) {
+    chart.series[0].setData(point_in);
+    chart.series[1].setData(point_out);
+}
+
+
+function video_filters() {
+    filters_url = "http://localhost:16000/api/filters"
+    json_data = {
+        "bri_a1": id_arr['bri_a1'].value,
+        "bri_b1": id_arr['bri_b1'].value,
+        "smooth_frame1": id_arr['smooth_frame1'].value,
+        "gamma1": id_arr['gamma1'].value,
+        "equal_switch": id_arr['equal_switch'].checked,
+        "edge_switch": id_arr['edge_switch'].checked,
+        "sharpen_level1": id_arr['sharpen_level1'].value,
+        "contour_switch": id_arr['contour_switch'].checked,
+        "file_path": localStorage.getItem("source_path")
+    }
+    fetch(filters_url, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(json_data)
+    }).then(res => res.json())
+        .then(data => {
+            console.log(data)
+            file_path = data["file_path"]
+            file_path = "file:///" + file_path
+            localStorage.setItem("current_path", file_path)
+            video.src = file_path
+        })
+
+}
+
+init_chart_highchart()
+track_from_json()
+value_init()
