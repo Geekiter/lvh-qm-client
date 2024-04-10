@@ -135,6 +135,12 @@ function track_from_json() {
             }
             update_highchart_data(data["down"], data["up"])
         })
+        .then(() => {
+            // 设为可见
+            document.getElementsByClassName("detect_result")[0].style.display = "block"
+            document.getElementById("container").style.visibility = "visible"
+
+        })
 
 }
 
@@ -304,5 +310,5 @@ function video_filters() {
 }
 
 init_chart_highchart()
-track_from_json()
+
 value_init()

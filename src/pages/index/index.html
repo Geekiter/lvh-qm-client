@@ -97,7 +97,7 @@
                 </button>
             </div>
             <hr/>
-            <div class="mt-2">
+            <div class="mt-2 detect_result" style="display: none">
                 <h5>检测结果参考：</h5>
                 <p>室间隔厚度（舒张期）：8.42</p>
                 <p>室间隔厚度（收缩期）：4.85</p>
@@ -139,8 +139,7 @@
                         </button>
                     </div>
                     <div class="p-4">
-                        <div id="container" style="width:100%; height:400px;" class="highcharts-dark"></div>
-<!--                        <canvas id="myChart" ></canvas>-->
+                        <div id="container" style="width:100%; height:400px;visibility: hidden" class="highcharts-dark"></div>
                     </div>
                     <p class="text-center" id="result">用于显示分类</p>
                     <div>
