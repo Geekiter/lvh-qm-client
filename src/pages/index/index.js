@@ -236,6 +236,15 @@ function init_chart_highchart(point_in, point_out) {
             credits: {enabled: false}, // 禁用版权信息
             chart: {
                 type: 'area',
+                events: {
+                    click: function (event){
+                        let xAxisValue = event.xAxis[0].value;
+                        let x = Math.round(xAxisValue);
+                        console.log(x);
+                        video.currentTime = x / 50;
+
+                    }
+                }
             },
             title: {
                 text: '',
